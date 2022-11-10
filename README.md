@@ -1,5 +1,5 @@
 # Bivariate Mental Health and Extreme Heat
-=
+--
 
 **Overview** <br>
 --
@@ -7,7 +7,7 @@ _This map is broken down to the ZIP Code level and shows the number of days each
 
 **Data Sources** <br>
 --
-_The data obtained for the source came from PRISM Climate Group for their temperature data. American Community Survey, for their population data at the ZIP Code level, and SHEPS Center for their mental health data. All calculations were performed using R.<br>
+_The data obtained for the source came from PRISM Climate Group for their temperature data. American Community Survey, for their population data at the ZIP Code level, and SHEPS Center for their mental health data. All calculations were performed using R._<br>
 
 
 **Libraries**
