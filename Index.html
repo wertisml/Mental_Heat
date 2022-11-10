@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Density of Mental Health Cases Vs. Extreme Temperature (2019)</title>
+    	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.0/dist/leaflet.css"/>
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.2.0/css/all.css">
+
+    <style>
+ 	html, body, #map { width: 100%; height: 100%; margin: 0; background: #fff; }
+
+  .legend {
+    font-family: 'Garamond', serif;
+    line-height: 40px;
+    font-size: 16px;
+    width: 190px;
+    color: #333333;
+    padding: 6px 8px;
+    background: white;
+    background: rgba(255,255,255,0.5);
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    border-radius: 5px;
+}
+
+.legend i {
+    width: 20px;
+    height: 20px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.9;
+}
+
+.legend img {
+    width: 16px;
+    height: 16px;
+    margin-right: 3px;
+    float: left;
+}
+
+.legend p {
+    font-size: 14px;
+    line-height: 20px;
+    margin: 0;
+}
+
+    </style>
+    	<link href="https://fonts.googleapis.com/css?family=Titillium+Web" rel="stylesheet">
+	<script src="https://unpkg.com/leaflet@1.7.0/dist/leaflet.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/1.3.4/chroma.min.js"></script>
+
+</head>
+<body>
+<!-- Our web map and content will go here -->
+<div id="map"></div>
+<script>
+
+// 1. Create a map object.
+var mymap = L.map('map', {
+    center: [35.7, -79.4], //note that we've centered the map to downtown AVL
+    zoom: 7, //this line adjusts the starting zoom level of the map
+    maxZoom: 18,//this line sets the maximum zoom level
+    minZoom: 2,//this line sets the minimum zoom level
+    detectRetina: true // detect whether the screen is high resolution or not.
+});
+
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mymap);
+
+//initiate variable
+var Mental_Health = null;
+
+//read in the geojson
+Mental_Health = L.geoJson.ajax("assets/Point_Data.geojson",{
+  onEachFeature: function (feature, layer) {
+      layer.bindPopup(feature.properties.c__1000+""+" Cases per 100,000");
+  },
+//Add the point data information to the map
+  pointToLayer: function(feature, latlng) {
+      var id = 0;
+      if (feature.properties.groups == "No_Case") { id = 0; }
+      else if (feature.properties.groups == "Medium_case")  { id = 1; }
+      else { id = 2;} // All other property types from attribute table
+      return L.marker(latlng, {icon: L.divIcon({className: 'fa-regular fa-face-frown marker-color-' + (id + 1).toString() })});
+  },
+    attribution: 'Temperature Data obtained from, <a href="https://prism.oregonstate.edu/"> PRISM Climate Group </a>, Mental Health Data obtained from, <a href = "https://www.shepscenter.unc.edu/" > SHEPS Center</a> | Map Author: Luke Wertis'
+}).addTo(mymap);
+
+// 4. build up a set of colors from colorbrewer's dark2 category
+var colors = chroma.scale('Blues').mode('lch').colors(3);
+
+// 5. dynamically append style classes to this page. The style classes will be used to shade the markers.
+// We can use a for loop to do this.
+for (i = 0; i < 3; i++) {
+    $('head').append($("<style> .marker-color-" + (i + 1).toString() + " { color: " + colors[i] + "; font-size: 15px; text-shadow: 0 0 3px #ffffff;} </style>"));
+}
+
+// 6. Set function for color ramp
+colors = chroma.scale('Reds').colors(6); //we'll use 5 classes of purples
+
+// this function manually defines your choropleth classification system
+//so you'll need to figure out which break points you'd like to use
+//based on the data distribution
+//this equal interval classification with 5 classes, takes the range of the
+//data (24) and divides it by 6, to show there are intervals of 4 per class
+//so...
+function setColor(density) {
+    var id = 0;
+    if (density > 20) { id = 5; } //24-4=20:highest 6th class
+    else if (density > 16 && density <= 20) { id = 4; } //20-4=16:5thclass
+    else if (density > 12 && density <= 16) { id = 3; } //16-4=12:4thclass
+    else if (density > 8 && density <= 12) { id = 2; } //12-4=8:3rdclass
+    else if (density > 4 &&  density <= 8) { id = 1; } //8-4=4:2ndclass
+    else  { id = 0; }
+    return colors[id];
+}
+
+L.geoJson.ajax("assets/Mental_Heat_Cases.geojson", {
+  onEachFeature: function (feature, layer) {
+      layer.bindPopup(feature.properties.Abv_95t+""+" Days above the 95th percentile of temperature");
+  },
+    style: style
+}).addTo(mymap);
+
+// 7. Set style function that sets fill color property equal to the number of 95th percentile days
+function style(feature) {
+    return {
+        fillColor: setColor(feature.properties.Abv_95t),
+        fillOpacity: 0.7,
+        weight: 2,
+        opacity: 1,
+        color: '#b4b4b4',
+        dashArray: '4'
+    };
+}
+
+// 9. Create Leaflet Control Object for Legend
+var legend = L.control({position: 'topright'});
+
+// 10. Function that runs when legend is added to map
+legend.onAdd = function () {
+
+    // Create Div Element and Populate it with HTML
+    var div = L.DomUtil.create('div', 'legend');
+    //this line creates a title for the choropleth part of the legend
+    div.innerHTML += '<b>Number of days exceding 95th temperature</b><br />';
+    //notice the class breaks entered at the end of the next 5 lines
+    //the colors specify the shade of purple that we used to do the polygon shading
+    div.innerHTML += '<i style="background: ' + colors[5] + '; opacity: 0.5"></i><p>20+</p>';
+    div.innerHTML += '<i style="background: ' + colors[4] + '; opacity: 0.5"></i><p>16-19</p>';
+    div.innerHTML += '<i style="background: ' + colors[3] + '; opacity: 0.5"></i><p>12-15</p>';
+    div.innerHTML += '<i style="background: ' + colors[2] + '; opacity: 0.5"></i><p>8-11</p>';
+    div.innerHTML += '<i style="background: ' + colors[1] + '; opacity: 0.5"></i><p>4-7</p>';
+    div.innerHTML += '<i style="background: ' + colors[0] + '; opacity: 0.5"></i><p>0-3</p>';
+    //this line provides the legend title for the airbnb colored symbols
+    div.innerHTML += '<hr><b>Concentration of Mental Health Issues<b><br />';
+    //the next 3 lines call the airbnb icon along with its proper color
+    //notice the names of the Airbnb property types listed within the <p> tags at the end of the lines
+    div.innerHTML += '<i class="fa-regular fa-face-frown marker-color-1"></i><p>No Cases</p>';
+    div.innerHTML += '<i class="fa-regular fa-face-frown marker-color-2"></i><p>Medium Cases</p>';
+    div.innerHTML += '<i class="fa-regular fa-face-frown marker-color-3"></i><p>High Cases</p>';
+    // Return the Legend div containing the HTML content
+    return div;
+};
+legend.addTo(mymap);
+
+// 12. Add a scale bar to map
+L.control.scale({position: 'bottomleft'}).addTo(mymap);
+
+</script>
+</body>
+</html>
