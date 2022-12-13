@@ -1,0 +1,236 @@
+fa-solid fa-circle
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Population vs RUCA (2019)</title>
+    	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.0/dist/leaflet.css"/>
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.2.0/css/all.css">
+
+    <style>
+ 	html, body, #map { width: 100%; height: 100%; margin: 0; background: #fff; }
+
+  .legend {
+    font-family: 'Garamond', serif;
+    line-height: 40px;
+    font-size: 16px;
+    width: 190px;
+    color: #333333;
+    padding: 6px 8px;
+    background: white;
+    background: rgba(255,255,255,0.5);
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    border-radius: 5px;
+}
+
+.legend i {
+    width: 20px;
+    height: 20px;
+    float: left;
+    margin-right: 8px;
+    opacity: .9;
+}
+
+.legend img {
+    width: 16px;
+    height: 16px;
+    margin-right: 3px;
+    float: left;
+}
+
+.legend p {
+    font-size: 14px;
+    line-height: 20px;
+    margin: 0;
+}
+
+    </style>
+    	<link href="https://fonts.googleapis.com/css?family=Titillium+Web" rel="stylesheet">
+	     <script src="https://unpkg.com/leaflet@1.7.0/dist/leaflet.js"></script>
+	      <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
+	       <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+	        <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/1.3.4/chroma.min.js"></script>
+
+
+</head>
+<body>
+<!-- Our web map and content will go here -->
+<div id="map"></div>
+<script>
+
+// 1. Create a map object.
+var mymap = L.map('map', {
+    center: [35.7, -79.4], //note that we've centered the map to downtown AVL
+    zoom: 7, //this line adjusts the starting zoom level of the map
+    maxZoom: 18,//this line sets the maximum zoom level
+    minZoom: 2,//this line sets the minimum zoom level
+    detectRetina: true // detect whether the screen is high resolution or not.
+});
+
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mymap);
+
+    //  L.mapbox.accessToken = 'pk.eyJ1Ijoid2VydGlzbWwiLCJhIjoiY2w5b2l4bms2MGdxdjN2bDhxcXg2MnJvZyJ9.BU3Rz7lH37dVGc1jCZfCCQ';
+
+      //var mymap = L.mapbox.map('map')
+        //.setView([35.7, -79.4], 7)
+        //.addLayer(L.mapbox.styleLayer('mapbox://styles/wertisml/cla017wce000t15k4qkvsmetf'));
+
+
+
+//initiate variable
+var Mental_Health = null;
+
+//read in the geojson
+Mental_Health = L.geoJson.ajax("assets/Point_Pop_Zip.geojson",{
+  onEachFeature: function (feature, layer) {
+      layer.bindPopup("population 5-19: " + feature.properties.Pop_5_19+"");
+  },
+//Add the point data information to the map
+  pointToLayer: function(feature, latlng) {
+      var id = 0;
+      if (feature.properties.Pop_5_19 > 10000 ) { id = 6; }
+      else if (feature.properties.Pop_5_19 > 5000 && feature.properties.Pop_5_19 <= 10000 )  { id = 5; }
+      else if (feature.properties.Pop_5_19 > 1000 && feature.properties.Pop_5_19 <= 5000 )  { id = 4; }
+      else if (feature.properties.Pop_5_19 > 500 && feature.properties.Pop_5_19 <= 1000 )  { id = 3; }
+      else if (feature.properties.Pop_5_19 > 100 && feature.properties.Pop_5_19 <= 500 )  { id = 2; }
+      else if (feature.properties.Pop_5_19 > 1 && feature.properties.Pop_5_19 <= 100)  { id = 1; }
+      else { id = 0;} // All other property types from attribute table
+      return L.marker(latlng, {icon: L.divIcon({className: 'fa-solid fa-circle marker-color-' + (id + 1).toString() })});
+  },
+    attribution: 'Temperature Data obtained from, <a href="https://prism.oregonstate.edu/"> PRISM Climate Group </a>, Mental Health Data obtained from, <a href = "https://www.shepscenter.unc.edu/" > SHEPS Center</a> | Map Author: Luke Wertis'
+}).addTo(mymap);
+
+// 4. build up a set of colors from colorbrewer's dark2 category
+//var colors = chroma.scale('Blues').mode('lch').colors(6);
+var colors = chroma.scale(['#BFE1B0',
+      '#99D492',
+      '#74C67A',
+      '#56B870',
+      '#39A96B',
+      '#1D9A6C',
+      '#188977',
+      '#137177',
+      '#0E4D64',
+      '#0A2F51']).mode('hsl').colors(7);
+
+// 5. dynamically append style classes to this page. The style classes will be used to shade the markers.
+// We can use a for loop to do this.
+for (i = 0; i < 7; i++) {
+    $('head').append($("<style> .marker-color-" + (i + 1).toString() + " { color: " + colors[i] + "; font-size: 15px; text-shadow: 0 0 3px #ffffff;} </style>"));
+}
+
+// 6. Set function for color ramp
+//colors = chroma.scale('Dark2').colors(10); //we'll use 5 classes of purples
+
+colors = chroma.scale([//'#B1DEFD',
+      //'#FDFAB3',
+      //'#FDFAB3',
+      '#e6194b', '#3cb44b', '#ffe119',
+      '#E5A5B5',
+      '#E5A5B5',
+      '#E5A5B5',
+      '#DAB4FF',
+      '#DAB4FF',
+      '#DAB4FF',
+      '#E4FFCC']).mode('hsl').colors(10);
+
+// this function manually defines your choropleth classification system
+//so you'll need to figure out which break points you'd like to use
+//based on the data distribution
+//this equal interval classification with 5 classes, takes the range of the
+//data (24) and divides it by 6, to show there are intervals of 4 per class
+//so...
+function setColor(density) {
+    var id = 0;
+    if (density > 9) { id = 9; } //24-4=20:highest 6th class #R
+    else if (density > 8 && density <= 9) { id = 8; } //20-4=16:5thclass #small-town
+    else if (density > 7 && density <= 8) { id = 7; } //20-4=16:5thclass #small-town
+    else if (density > 6 && density <= 7) { id = 6; } //20-4=16:5thclass #small-town
+    else if (density > 5 && density <= 6) { id = 5; } //20-4=16:5thclass #Micropolitan
+    else if (density > 4 && density <= 5) { id = 4; } //20-4=16:5thclass #Micropolitan
+    else if (density > 3 && density <= 4) { id = 3; } //16-4=12:4thclass #Micropolitan
+    else if (density > 2 && density <= 3) { id = 2; } //12-4=8:3rdclass #Metropolitan
+    else if (density > 1 &&  density <= 2) { id = 1; } //8-4=4:2ndclass #Metropolitan
+    else  { id = 0; } //#Metropolitan
+    return colors[id];
+}
+
+L.geoJson.ajax("assets/Pop_Zip.geojson", {
+  onEachFeature: function (feature, layer) {
+      layer.bindPopup("ZCTA " + feature.properties.ZCTA5CE10+"");
+  },
+    style: style
+}).addTo(mymap);
+
+function style(feature) {
+    return {
+        fillColor: setColor(feature.properties.RUCA1),
+        fillOpacity: .6,
+        weight: 1,
+        opacity: .8,
+        color: 'black',
+        dashArray: '1'
+    };
+}
+
+// Create boundary line between geographic regions
+L.geoJson.ajax("assets/Peidmont_Boundary.geojson",{
+//onEachFeature: function(feature, layer) {
+  //layer.bindPopup(feature.properties.FID_Piedmo+"");
+//},
+  style: Peid_style
+}).addTo(mymap);
+
+// Setting the color and style for the boundary
+function Peid_style(feature) {
+    return {
+        //fillColor: setColor(feature.properties.RUCA1),
+        //fillOpacity: 1,
+        weight: 6,
+        opacity: .8,
+        color: 'darkorange',
+        dashArray: '1'
+    };
+}
+
+// 9. Create Leaflet Control Object for Legend
+var legend = L.control({position: 'topright'});
+
+// 10. Function that runs when legend is added to map
+legend.onAdd = function () {
+
+    // Create Div Element and Populate it with HTML
+    var div = L.DomUtil.create('div', 'legend');
+    //this line creates a title for the choropleth part of the legend
+    div.innerHTML += '<b>RUCA1 Code</b><br />';
+    //notice the class breaks entered at the end of the next 5 lines
+    //the colors specify the shade of purple that we used to do the polygon shading
+    div.innerHTML += '<i style="background: ' + colors[0] + '; opacity: 0.9"></i><p>Metropolitan 1</p>';
+    div.innerHTML += '<i style="background: ' + colors[1] + '; opacity: 0.9"></i><p>Metropolitan 2</p>';
+    div.innerHTML += '<i style="background: ' + colors[2] + '; opacity: 0.9"></i><p>Metropolitan 3</p>';
+    div.innerHTML += '<i style="background: ' + colors[3] + '; opacity: 0.9"></i><p>Micropolitan</p>';
+    div.innerHTML += '<i style="background: ' + colors[6] + '; opacity: 0.9"></i><p>Small Towns</p>';
+    div.innerHTML += '<i style="background: ' + colors[9] + '; opacity: 0.9"></i><p>Rural/Isolated</p>';
+
+    //this line provides the legend title for the airbnb colored symbols
+    div.innerHTML += '<hr><b>Population of Youth<b><br />';
+    //the next 3 lines call the airbnb icon along with its proper color
+    //notice the names of the Airbnb property types listed within the <p> tags at the end of the lines
+    div.innerHTML += '<i class="fa-solid fa-circle marker-color-7"></i><p>Over 10000</p>';
+    div.innerHTML += '<i class="fa-solid fa-circle marker-color-6"></i><p>5000 - 9999</p>';
+    div.innerHTML += '<i class="fa-solid fa-circle marker-color-5"></i><p>1000 - 4999</p>';
+    div.innerHTML += '<i class="fa-solid fa-circle marker-color-4"></i><p>500 - 999</p>';
+    div.innerHTML += '<i class="fa-solid fa-circle marker-color-3"></i><p>100 - 499</p>';
+    div.innerHTML += '<i class="fa-solid fa-circle marker-color-2"></i><p>0 - 99</p>';
+    div.innerHTML += '<i class="fa-solid fa-circle marker-color-1"></i><p>0</p>';
+    // Return the Legend div containing the HTML content
+    return div;
+};
+legend.addTo(mymap);
+
+// 12. Add a scale bar to map
+L.control.scale({position: 'bottomleft'}).addTo(mymap);
+
+</script>
+</body>
+</html>
